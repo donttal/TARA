@@ -1,0 +1,28 @@
+admiration,wonder,esteem,appreciation,wonderment 
+amusement,entertainment
+anger,angriness,choler,ire,ira,wrath,see_red 
+annoyance,vexation,botheration,chafe,pain,bother,infliction,aggravator,annoying,irritation,pain_in_the_neck,pain_in_the_ass 
+approval,approving,favorable_reception,commendation,favourable_reception,blessing 
+caring,lovingness,care,manage,give_care,like,deal,handle,worry,wish 
+confusion,discombobulation,disarray,mix-up,confusedness,muddiness,mental_confusion 
+curiosity,wonder,curio,rarity,peculiarity,oddity,oddment 
+desire,hope,trust,want 
+disappointment,letdown,dashing_hopes
+disapproval,disfavour,dislike,disfavor
+disgust,gross_out,churn_up,revolt,nauseate,repel,sicken 
+embarrassment,plethora,overplus,superfluity
+excitement,excitation,agitation,upheaval,fervor,fervour,inflammation,hullabaloo,exhilaration,turmoil 
+fear,fright, dread, care,veneration, revere, concern, venerate, fearfulness, reverence, awe 
+gratitude
+grief,heartbreak,brokenheartedness,heartache,sorrow 
+joy,joyfulness,pleasure,rejoice,delight,gladden,joyousness 
+love,eff,making_love,have_it_off,make_out,make_love,sexual_love,get_it_on,fuck,hump,bed,beloved,be_intimate,bang,jazz,screw, get_laid, honey, lovemaking, love_life, roll_in_the_hay, know, sleep_with, enjoy, have_a_go_at_it, dear, have_it_away, do_it, have_sex, have_intercourse, bonk, lie_with, sleep_together, dearest, erotic_love, passion 
+nervousness,nerves,jumpiness,restiveness,jitteriness 
+optimism
+pride,plume,pridefulness,superbia,congratulate 
+realization,realisation,actualisation,recognition,fruition,actualization 
+relief,backup_man, rest, sculptural_relief, reliever, alleviation, backup, easing, assuagement, respite, succor, rest_period, embossment, succour, substitute, fill-in, easement, ease, stand-in, rilievo, ministration, moderation, relievo 
+remorse,self-reproach, compunction
+sadness,gloominess, lugubriousness, unhappiness, sorrowfulness, sorrow 
+surprise,surprisal, storm
+neutral,achromatic, electroneutral, indifferent, inert, impersonal

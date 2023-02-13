@@ -1,0 +1,28 @@
+admiration,definition, lovely, admiration, appreciation, delight, thelike 
+amusement,oil, entertainment, amusement, fun 
+anger,anger, fury 
+annoyance,nuisance, displeasure, irritable, annoyance, uncomfortable, aggravation, trouble, bother, irritation, disturbance, contrariety 
+approval,permission, approve, agree, approval, consent, ok, sanction 
+caring,takecareof, takingcareof, relatingto, caretaker, caring, care, attention 
+confusion,bluriesofconsciousnessconfusion, confusion, confuse 
+curiosity,curiosity 
+desire,disappoint, awish, desire, longing, need, wish 
+disappointment,frustration, disappointed, disappointment, disappoint 
+disapproval,disagreement, rejection, notaccepting, disapproval, dissatisfaction, dislike, refuse 
+disgust,dry, disgust, hideous, hatred 
+embarrassment,embarrassment, awkward, anxiety, shame, disturbance 
+excitement,excitation, passion, getexcited, excited, happy, excitement 
+fear,tofear, fearful, terror, afraid, fear 
+gratitude,granting, dental, thankfulness, grateful, thanks, acknowledgement, gratitude 
+grief,mourning, sorrow, woe, grief, pain, sadness, sad, sadnes 
+joy,cheerful, joyous, joy, happiness, happy 
+love,loveandprecious, love, affection, thelove, tolike
+nervousness,nervous, panic, irritability, fear, nervousness, worry, worried 
+optimism,hopeful, optimism, hope, optimistic 
+pride,selfesteem, pride, proud 
+realization,accomplish, diagnosis, awareness, recovery, actualization, realization, perception, implementation, sensation 
+relief,satisfaction, subsidy, comfort, alleviation, help, relaxation, aid, relief 
+remorse,remorse, resentment, conscience, regrets, regret 
+sadness,thesadness, sorrow, affliction, sadness, sad 
+surprise,lustful, wonder, surprise 
+neutral,natural, neutral
