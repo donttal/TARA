@@ -12,6 +12,18 @@ We currently provide a fully operational version of .ipynb.
 - sentencepiece
 - tqdm
 - pytorch>=1.10.0
+- nltk
+- datasets
+- rouge==1.0.0
+
+### OpenPromptForTARA install 
+OpenPromptForTARA is a variant version for TARA based on [OpenPrompt](
+OpenPrompt). Thanks for their development contribution.
+```bash
+cd OpenPromptForTARA
+pip install -r requirements.txt
+python setup.py install
+```
 
 ## Train
 ```bash
