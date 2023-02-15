@@ -1,0 +1,26 @@
+# model
+model = "Bert"
+
+# training_type
+training_type = "mix"
+
+# prompt_type
+template_type = "ptuning"
+
+# Data
+data_condition = "fewshot"
+num_examples_per_label_ = 50
+
+# zero-shot
+few_shot_train = True
+
+# train
+model_lr = 2e-5
+template_lr = 1e-3
+dataset = "go_emotions"
+epoch_num = 3
+batch_size = 8
+use_cuda = True
+
+# TML
+bank_size = 32
