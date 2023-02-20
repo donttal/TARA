@@ -32,9 +32,6 @@ sh train.sh conf/your_train.conf
 
 ### Configuration
 ```conf
-# model
-model = "Bert"
-
 # training_type
 training_type = "mix"
 
@@ -42,16 +39,17 @@ training_type = "mix"
 template_type = "ptuning"
 
 # Data
+dataset = "go_emotions"
 data_condition = "fewshot"
-num_examples_per_label_ = 50
+num_examples_per_label = 50
 
 # zero-shot
 few_shot_train = True
 
 # train
+model = "BERT"
 model_lr = 2e-5
 template_lr = 1e-3
-dataset = "go_emotions"
 epoch_num = 3
 batch_size = 8
 use_cuda = True
