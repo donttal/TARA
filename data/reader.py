@@ -3,11 +3,13 @@
 
 from datasets import load_dataset
 from openprompt.data_utils import InputExample
+from openprompt.utils.reproduciblity import set_seed
+from openprompt.data_utils.data_sampler import FewShotSampler
 
 
 class Reader(object):
 
-    def __init__(self, name) -> None:
+    def __init__(self, name, division, num_examples_per_label=100) -> None:
         if name not in ["go_emotions", "emotion"]:
             print("Other datasets are not yet supported")
 
@@ -75,6 +77,8 @@ class Reader(object):
         self.raw_dataset = {"train": df_train,
                             "validation": df_dev, "test": df_test, "name": name}
         self.labels = labels_cols if name == "go_emotions" else labels_
+        self.div = division
+        self.num_examples_per_label = num_examples_per_label
 
     def get_class_distribution(self) -> None:
         train_data = self.raw_dataset["train"]
@@ -97,7 +101,10 @@ class Reader(object):
         print("Class distribution in training data: ")
         print(labels_dict)
 
+        return labels_dict
+
     def process_data(self,) -> dict:
+        # 'full_data', 'fewshot', 'DA'
         dataset = {}
         for split in ['train', 'validation', 'test']:
             dataset[split] = []
@@ -106,4 +113,11 @@ class Reader(object):
                     text_a=data["text"], label=data["label"], guid=data["idx"])
                 dataset[split].append(input_example)
 
-        return dataset
+        if self.div == "fewshot":
+            support_sampler = FewShotSampler(
+                num_examples_per_label=self.num_examples_per_label, also_sample_dev=False)
+            dataset['support'] = support_sampler(dataset['train'], seed=42)
+
+        return dataset, self.labels
+
+
