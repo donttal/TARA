@@ -1,6 +1,7 @@
 import os
 import random
 import urllib.request
+import zipfile
 from collections import OrderedDict
 from random import sample
 
@@ -8,9 +9,11 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy import spatial
 from sklearn import datasets, manifold
+from sklearn.manifold import TSNE
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
-import zipfile
+from sklearn import manifold
 
 random.seed(42)
 
@@ -36,7 +39,7 @@ class visual(object):
         )
         plt.show()
 
-    def show_tSNE(self, storage_detail):
+    def show_model_tSNE(self, storage_detail):
         '''t-SNE  with legend'''
         # https://stackoverflow.com/questions/52297857/t-sne-scatter-plot-with-legend
         index_sample = sample(range(1, len(self.data_logits)), 1500)
@@ -81,3 +84,48 @@ class visual(object):
             plt.title('(a) Vanilla Transformer', y=-0.21, fontsize=18)
             plt.savefig(pic_name_tSNE, dpi=200, bbox_inches='tight')
             plt.show()
+
+    def show_word2vec_tNSE(self, storage_detail):
+        plt.style.use("default")
+        X, y = np.array(self.data_logits), self.data_labels
+        emmbed_dict = {}
+        with open('../data/glove.6B.300d.txt','r') as f:
+            for line in f:
+                values = line.split()
+                word = values[0]
+                vector = np.asarray(values[1:],'float32')
+                emmbed_dict[word]=vector
+        
+        tsne_ = manifold.TSNE(n_components=2, learning_rate='auto', init='pca', random_state=42)
+
+        y_ = [self.labels[i] for i in y]
+        wordvec_ = np.array([emmbed_dict[item] for item in y_])
+        X_tsne_ = tsne_.fit_transform(wordvec_)
+
+        print("Org data dimension is {}. Embedded data dimension is {}".format(wordvec_.shape[-1], X_tsne_.shape[-1]))
+
+        # x_min_, x_max_ = X_tsne_.min(0), X_tsne_.max(0)
+        # X_norm_ = (X_tsne_ - x_min_) / (x_max_ - x_min_)  # 归一化
+        X_norm_ = X_tsne_
+        plt.figure(figsize=(8, 8))
+        plt.grid(True, zorder=0)
+
+        for i in range(X_norm_.shape[0]):
+            # if y[i] == 27:
+            #   continue
+            plt.scatter(X_norm_[i, 0], X_norm_[i, 1], s=15, color="#0000FF",zorder=100)
+
+        plt.xlabel("X",size=19)
+        plt.ylabel("Y",size=19)
+
+
+        plt.xlim((-150, 150))
+        plt.xticks(size=18)
+        plt.ylim((-150, 150))
+        plt.yticks(size=18)
+
+        pic_name_tSNE = "output/fig_TSNE/"+storage_detail+"_legend.pdf"
+        plt.title('(b) Wod2Vec',y=-0.18, fontsize=20)
+
+        plt.savefig(pic_name_tSNE,dpi=200,bbox_inches='tight')
+        plt.show()

@@ -57,3 +57,10 @@ use_cuda = True
 # TML
 bank_size = 32
 ```
+
+## Visualisation
+```bash
+cd data
+wget https://nlp.stanford.edu/data/glove.6B.zip
+unzip glove.6B.zip
+```

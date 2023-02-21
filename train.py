@@ -17,15 +17,21 @@ from openprompt.prompts import (ManualTemplate, ManualVerbalizer,
                                 MixedTemplate, PTRTemplate, PtuningTemplate,
                                 SoftTemplate)
 from openprompt.utils.reproduciblity import set_seed
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-from sklearn.metrics import classification_report
+from pytorch_metric_learning import (distances, losses, miners, reducers,
+                                     testers)
+from sklearn.metrics import (accuracy_score, classification_report,
+                             precision_recall_fscore_support)
+from torch import linalg as LA
+from torch.nn.utils.parametrizations import spectral_norm
 from tqdm import tqdm
 from transformers import get_linear_schedule_with_warmup
 from transformers.optimization import AdamW
 
 from data.reader import Reader
+from models.TML import TML
 
 min_f1 = 0.0
+
 
 def set_seeds(seed=42):
     random.seed(seed)
@@ -43,7 +49,7 @@ def setup_args():
     """Setup arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--training_type", default="mix",
-                        type=str, help="prompt's training style")
+                        type=str, choices=['man', 'mix', 'PCA', 'TML', 'TARA', 'calibration'], help="prompt's training style")
     parser.add_argument("--template_type", default="ptuning", type=str, choices=['man', 'soft', 'mix', 'ptuning', 'ptr'],
                         help="The way prompt templates are constructed")
     parser.add_argument("--dataset", default="go_emotions", type=str, choices=["go_emotions", "emotion"],
@@ -199,10 +205,12 @@ def train(args):
         prompt_model = prompt_model.cuda()
 
     if args.data_condition == "full_data":
-        model_save_pth = args.model+"_"+str(args.training_type)+"_template_"+args.template_type+"_"+args.data_condition+"_"+"_bankSize_"+str(args.bank_size)+"_dataset_"+args.dataset+".pth"
+        model_save_pth = args.model+"_"+str(args.training_type)+"_template_"+args.template_type + \
+            "_"+args.data_condition+"_"+"_bankSize_" + \
+            str(args.bank_size)+"_dataset_"+args.dataset+".pth"
     elif args.data_condition == "fewshot":
-        model_save_pth = args.model+"_"+str(args.training_type)+"_template_"+args.template_type+"_"+args.data_condition+"_"+str(args.num_examples_per_label)+"_bankSize_"+str(args.bank_size)+"_dataset_"+args.dataset+".pth"
-
+        model_save_pth = args.model+"_"+str(args.training_type)+"_template_"+args.template_type+"_"+args.data_condition+"_"+str(
+            args.num_examples_per_label)+"_bankSize_"+str(args.bank_size)+"_dataset_"+args.dataset+".pth"
 
     # optimizer
     loss_func = torch.nn.CrossEntropyLoss()
@@ -228,32 +236,113 @@ def train(args):
     scheduler1 = get_linear_schedule_with_warmup(optimizer1, 0, tot_step)
     scheduler2 = get_linear_schedule_with_warmup(optimizer2, 0, tot_step)
 
-    if args.training_type == 'mix' and args.few_shot_train:
+    if args.training_type in ['PCA', 'TML']:
+        distance = distances.CosineSimilarity()
+        reducer = reducers.ThresholdReducer(low=0)
+        loss_func_metric = losses.TripletMarginLoss(
+            margin=0.2, distance=distance, reducer=reducer)
+        mining_func = miners.TripletMarginMiner(
+            margin=0.2, distance=distance, type_of_triplets="semihard"
+        )
+        level_switch = TML(args.dataset, labels)
+
+    if args.few_shot_train:
+        step_index = int(args.bank_size/args.batch_size)
+        logits_stack = []
+        labels_stack = []
         start_time = time.time()
         for epoch in tqdm(range(args.epoch_num)):
-            tot_loss = 0 
+            tot_loss = 0
             for step, inputs in enumerate(train_dataloader):
                 prompt_model.train()
                 if args.use_cuda:
                     inputs = inputs.cuda()
-                
+
                 logits, _ = prompt_model(inputs)
-                
                 labels = inputs['label']
+
                 loss = loss_func(logits, labels)
+
+                # PCA
+                if args.training_type == 'PCA':
+                    indices_tuple1 = mining_func(logits, labels)
+                    auxiliary_loss = loss_func_metric(
+                        logits, labels, indices_tuple1)
+                    loss = loss + auxiliary_loss
+
+                if args.training_type == 'TML':
+                    for logit, label in zip(logits.cpu().tolist(), labels.cpu().tolist()):
+                        logits_stack.append(logit)
+                        labels_stack.append(label)
+                    if step % step_index == 1:
+                        if args.dataset == "go_emotions":
+                            Hierarchical_labels_mid = list(
+                                map(level_switch.label_change_mid, labels_stack))
+                            Hierarchical_labels_mid = torch.Tensor(
+                                Hierarchical_labels_mid).to(labels.device)
+                            logits_stack = torch.Tensor(
+                                logits_stack).to(labels.device)
+
+                            indices_tuple = mining_func(
+                                logits_stack, Hierarchical_labels_mid)
+                            loss2 = loss_func_metric(
+                                logits_stack, Hierarchical_labels_mid, indices_tuple)
+
+                            Hierarchical_labels_high = list(
+                                map(level_switch.label_change_high, labels_stack))
+                            Hierarchical_labels_high = torch.Tensor(
+                                Hierarchical_labels_high).to(labels.device)
+                            indices_tuple = mining_func(
+                                logits_stack, Hierarchical_labels_high)
+                            loss3 = loss_func_metric(
+                                logits_stack, Hierarchical_labels_high, indices_tuple)
+
+                            loss_TML = 1/7*loss2 + 1/4*loss3
+
+                        elif args.dataset == "emotion":
+                            Hierarchical_labels = list(
+                                map(level_switch.label_change, labels_stack))
+                            Hierarchical_labels = torch.Tensor(
+                                Hierarchical_labels).to(labels.device)
+                            logits_stack = torch.Tensor(
+                                logits_stack).to(labels.device)
+
+                            indices_tuple = mining_func(
+                                logits_stack, Hierarchical_labels)
+                            loss2 = loss_func_metric(
+                                logits_stack, Hierarchical_labels, indices_tuple)
+
+                            loss_TML = 1/4*loss2
+                        loss = loss + loss_TML
+
+                if args.training_type == 'TARA':
+                    if step % step_index == 1:
+                        w1 = prompt_model.plm.fc1.weight.cpu()
+                        diff_matrix1 = torch.matmul(
+                            w1, w1.transpose(1, 0))-torch.eye(w1.shape[0])
+                        loss_w1 = LA.matrix_norm(diff_matrix1)
+                        w2 = prompt_model.plm.fc2.weight.cpu()
+                        loss_w2 = LA.matrix_norm(w2)-1
+                        w3 = prompt_model.plm.fc3.weight.cpu()
+                        diff_matrix3 = torch.matmul(w3,w3.transpose(1,0))-torch.eye(w3.shape[0])
+                        loss_w3 = LA.matrix_norm(diff_matrix3)
+                        loss_collapse =  loss_w1 + loss_w2 + loss_w3
+                        loss = loss + loss_collapse
+
                 loss.backward()
                 tot_loss += loss.item()
                 optimizer1.step()
                 optimizer1.zero_grad()
                 optimizer2.step()
                 optimizer2.zero_grad()
-                if step %100 == 1:
-                    print("Epoch {}, average loss: {}".format(epoch, tot_loss/(step+1)), flush=True)
-                    
+                if step % 100 == 1:
+                    print("Epoch {}, average loss: {}".format(
+                        epoch, tot_loss/(step+1)), flush=True)
+
                 if step % 500 == 1:
                     # evaluation
                     prompt_model.eval()
-                    
+
                     allpreds = []
                     alllabels = []
                     for step, inputs in enumerate(validation_dataloader):
@@ -263,7 +352,8 @@ def train(args):
                         # logits = prompt_model(inputs)
                         labels = inputs['label']
                         alllabels.extend(labels.cpu().tolist())
-                        allpreds.extend(torch.argmax(logits, dim=-1).cpu().tolist())
+                        allpreds.extend(torch.argmax(
+                            logits, dim=-1).cpu().tolist())
 
                     dev_res = compute_metrics(alllabels, allpreds)
                     acc_score = dev_res["accuracy"]
@@ -276,24 +366,24 @@ def train(args):
                     if min_f1 < f1_score:
                         min_f1 = float(f1_score)
                         print("save model in epoch:"+str(epoch))
-                        torch.save(prompt_model.state_dict(),model_save_pth)
+                        torch.save(prompt_model.state_dict(), model_save_pth)
 
-    end_time = time.time()  
+    end_time = time.time()
     complete_time = end_time - start_time
     print("running time: "+str(datetime.timedelta(seconds=complete_time)))
 
     # Test
     # Test Zero shot
     test_dataloader = PromptDataLoader(
-        dataset=dataset["test"], 
-        template=mytemplate, 
-        tokenizer=tokenizer, 
+        dataset=dataset["test"],
+        template=mytemplate,
+        tokenizer=tokenizer,
         tokenizer_wrapper_class=WrapperClass,
-        max_seq_length=256,  
-        decoder_max_length=3, 
+        max_seq_length=256,
+        decoder_max_length=3,
         batch_size=args.batch_size,
-        shuffle=False, 
-        teacher_forcing=False, 
+        shuffle=False,
+        teacher_forcing=False,
         predict_eos_token=False,
         truncate_method="tail"
     )
@@ -310,8 +400,8 @@ def train(args):
         if args.use_cuda:
             inputs = inputs.cuda()
 
-        logits, _  = test_model(inputs)
-        
+        logits, _ = test_model(inputs)
+
         labels = inputs['label']
 
         alllabels.extend(labels.cpu().tolist())
@@ -321,6 +411,7 @@ def train(args):
     result = compute_metrics(alllabels, allpreds)
     print(result)
     print(classification_report(alllabels, allpreds, target_names=labels))
+
 
 if __name__ == "__main__":
     args = setup_args()
